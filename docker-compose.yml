@@ -1,0 +1,51 @@
+version: "3.8"
+services:
+  backend:
+    image: krana135/ems_backend:v2.0
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/new
+      SPRING_DATASOURCE_USERNAME: ems_usr
+      SPRING_DATASOURCE_PASSWORD: Federer07
+      CORS_ALLOWED_ORIGINS: http://localhost  # Or, better, use a wildcard in development: *
+      SPRING_PROFILES_ACTIVE: docker
+    volumes:
+      - ./application-docker.properties:/app/application-docker.properties
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:  # Add this!
+      - my-network
+
+  frontend:
+    image: krana135/ems_frontend:v2.0
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    volumes:
+      - ./nginx_config:/etc/nginx/conf.d  # Mount nginx config
+      - ./dist:/usr/share/nginx/html  # Mount the frontend build output
+    networks:  # Add this!
+      - my-network
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: Sqlrockstar
+      MYSQL_DATABASE: new
+      MYSQL_USER: ems_usr
+      MYSQL_PASSWORD: Federer07
+    ports:
+      - "3309:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:  # Add this if you want the db on the same network
+      - my-network
+
+networks:  # Define the network
+  my-network:
